@@ -17,10 +17,10 @@ m = fastmunk.FastMunk()
 start = time.time()
 for _ in range(10000):
     indices = m.compute(mat)
-print("FastMunk: ", time.time() - start)
+print("FastMunk: ", time.time() - start, "[s]")
 
 m = munkres.Munkres()
 start = time.time()
 for _ in range(10000):
     indices = m.compute(mat)
-print("Munkres: ", time.time() - start)
+print("Munkres: ", time.time() - start, "[s]")

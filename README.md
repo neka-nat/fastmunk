@@ -10,6 +10,6 @@ python benchmark.py
 Output
 
 ```sh
-FastMunk:  0.023752212524414062
-Munkres:  0.5953876972198486
+FastMunk:  0.02310633659362793 [s]
+Munkres:  0.5914878845214844 [s]
 ```
