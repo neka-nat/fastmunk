@@ -20,10 +20,11 @@ mat = np.array([
 ], dtype=np.float64)
 
 m = fastmunk.FastMunk()
-m.compute(mat)
+indices = m.compute(mat)
 ```
 
 ## Benchmark
+Compare with [munkres implemented in python](https://github.com/bmc/munkres).
 
 ```sh
 cd examples
