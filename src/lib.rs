@@ -1,5 +1,3 @@
-use std::ops::Mul;
-
 use fixedbitset::FixedBitSet;
 use ndarray::ArrayView2;
 use numpy::PyArray2;
