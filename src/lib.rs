@@ -4,7 +4,7 @@ use numpy::PyArray2;
 use ordered_float::OrderedFloat;
 use pyo3::prelude::*;
 
-fn kuhn_munkres(weights: ArrayView2<f64>) -> Vec<(usize, usize)> {
+fn kuhn_munkres(weights: ArrayView2<f64>, maximize: bool) -> Vec<(usize, usize)> {
     // We call x the rows and y the columns. (nx, ny) is the size of the matrix.
     let nx = weights.nrows();
     let ny = weights.ncols();
@@ -12,6 +12,11 @@ fn kuhn_munkres(weights: ArrayView2<f64>) -> Vec<(usize, usize)> {
         nx <= ny,
         "number of rows must not be larger than number of columns"
     );
+    let copied_weights = if !maximize {
+        weights.map(|x| -x).view().to_owned()
+    } else {
+        weights.to_owned()
+    };
     // xy represents matching for x, yz matching for y
     let mut xy: Vec<Option<usize>> = vec![None; nx];
     let mut yx: Vec<Option<usize>> = vec![None; ny];
@@ -21,7 +26,7 @@ fn kuhn_munkres(weights: ArrayView2<f64>) -> Vec<(usize, usize)> {
     let mut lx: Vec<OrderedFloat<f64>> = (0..nx)
         .map(|row| {
             (0..ny)
-                .map(|col| OrderedFloat(weights[(row, col)]))
+                .map(|col| OrderedFloat(copied_weights[(row, col)]))
                 .max()
                 .unwrap()
         })
@@ -46,7 +51,7 @@ fn kuhn_munkres(weights: ArrayView2<f64>) -> Vec<(usize, usize)> {
             // As we add x nodes to the alternating path, we update the slack to
             // represent the smallest margin between one of the x nodes and y.
             for y in 0..ny {
-                slack[y] = lx[root].0 + ly[y] - weights[(root, y)];
+                slack[y] = lx[root].0 + ly[y] - copied_weights[(root, y)];
             }
             slackx.clear();
             slackx.resize(ny, root);
@@ -94,7 +99,7 @@ fn kuhn_munkres(weights: ArrayView2<f64>) -> Vec<(usize, usize)> {
                 // path.
                 for y in 0..ny {
                     if alternating[y].is_none() {
-                        let alternate_slack = lx[x] + ly[y] - weights[(x, y)];
+                        let alternate_slack = lx[x] + ly[y] - copied_weights[(x, y)];
                         if slack[y] > alternate_slack.0 {
                             slack[y] = alternate_slack.0;
                             slackx[y] = x;
@@ -119,18 +124,21 @@ fn kuhn_munkres(weights: ArrayView2<f64>) -> Vec<(usize, usize)> {
 }
 
 #[pyclass(module = "fastmunk")]
-struct FastMunk {}
+struct FastMunk {
+    maximize: bool,
+}
 
 #[pymethods]
 impl FastMunk {
     #[new]
-    fn new() -> Self {
-        FastMunk {}
+    #[args(maximize = false)]
+    fn new(maximize: bool) -> Self {
+        FastMunk { maximize }
     }
 
     fn compute(&self, weights: &PyArray2<f64>) -> PyResult<Vec<(usize, usize)>> {
         let weights = unsafe { weights.as_array() };
-        Ok(kuhn_munkres(weights.map(|&x| -x).view()))
+        Ok(kuhn_munkres(weights, self.maximize))
     }
 }
 
